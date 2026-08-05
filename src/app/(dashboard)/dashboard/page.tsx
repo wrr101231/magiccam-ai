@@ -157,13 +157,29 @@ export default function DashboardPage() {
         return;
       }
 
-      // 2. Trigger download via hidden anchor (keeps user on dashboard)
+      // 2. Fetch the file to check if it exists instead of forcing a blind download
+      const downloadRes = await fetch(reqData.downloadUrl);
+      if (!downloadRes.ok) {
+        const errorData = await downloadRes.json();
+        alert(errorData.message || 'File not found on server.');
+        return;
+      }
+      
+      // If valid, convert to blob and download
+      const blob = await downloadRes.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = reqData.downloadUrl;
-      a.download = '';
-      a.style.display = 'none';
+      a.href = url;
+      const contentDisposition = downloadRes.headers.get('content-disposition');
+      let fileName = 'MagicCamAI.zip';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) fileName = match[1];
+      }
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       // Refresh download history after latency
