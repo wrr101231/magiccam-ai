@@ -1,0 +1,6 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1783981591.020353 1777668 gl_context.cc:369] GL version: 2.1 (2.1 INTEL-18.8.16), renderer: Intel(R) HD Graphics 6000
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1783981591.290648 1777799 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+/Users/mac/Documents/MagicCamAI/desktop/ai-backend/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(

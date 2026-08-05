@@ -1,0 +1,40 @@
+MagicCamAI Software License Agreement
+
+Copyright (c) 2025 MagicCamAI. All Rights Reserved.
+
+IMPORTANT: READ CAREFULLY BEFORE INSTALLING OR USING THIS SOFTWARE.
+
+By installing, copying, or otherwise using this software product ("Software"),
+you agree to be bound by the terms of this License Agreement.
+
+1. GRANT OF LICENSE
+   MagicCamAI grants you a non-exclusive, non-transferable license to install
+   and use this Software on the number of computers specified by your purchased
+   license plan.
+
+2. RESTRICTIONS
+   You may not reverse engineer, decompile, disassemble, modify, translate,
+   or create derivative works based on the Software.
+
+3. INTELLECTUAL PROPERTY
+   The Software and all copies thereof are proprietary to MagicCamAI and
+   title thereto remains in MagicCamAI. All applicable rights to patents,
+   copyrights, trademarks, and trade secrets in the Software are and shall
+   remain in MagicCamAI.
+
+4. DISCLAIMER OF WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED. MAGICCAMAI DOES NOT WARRANT THAT THE SOFTWARE WILL MEET
+   YOUR REQUIREMENTS OR THAT ITS OPERATION WILL BE UNINTERRUPTED OR
+   ERROR-FREE.
+
+5. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL MAGICCAMAI BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY
+   TO USE THE SOFTWARE.
+
+6. TERMINATION
+   This license is effective until terminated. It will terminate automatically
+   if you fail to comply with any term of this Agreement.
+
+For questions regarding this license, contact: support@magiccamai.com

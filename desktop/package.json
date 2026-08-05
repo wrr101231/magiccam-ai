@@ -1,0 +1,149 @@
+{
+  "name": "magic-cam-ai-desktop",
+  "version": "1.0.0",
+  "description": "MagicCamAI — Professional local AI creative companion app.",
+  "author": {
+    "name": "MagicCamAI",
+    "email": "support@magiccamai.com"
+  },
+  "homepage": "https://magiccamai.com",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && electron .",
+    "pack": "tsc && electron-builder --dir",
+    "dist": "tsc && electron-builder",
+    "dist:win": "tsc && electron-builder --win",
+    "dist:mac": "tsc && electron-builder --mac",
+    "dist:linux": "tsc && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.9.1",
+    "png2icons": "^2.0.1",
+    "typescript": "^5.3.3"
+  },
+  "build": {
+    "appId": "com.magiccamai.desktop",
+    "productName": "MagicCamAI",
+    "copyright": "Copyright © 2025 MagicCamAI. All rights reserved.",
+    "artifactName": "MagicCamAI-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "src/renderer/**/*",
+      "!**/*.ts",
+      "!**/tsconfig.json"
+    ],
+    "extraResources": [
+      "ai-backend/**/*"
+    ],
+    "extraMetadata": {
+      "main": "dist/main/index.js"
+    },
+    "fileAssociations": [
+      {
+        "ext": "mcam",
+        "name": "MagicCamAI Project",
+        "description": "MagicCamAI Project File",
+        "role": "Editor"
+      }
+    ],
+    "publish": {
+      "provider": "generic",
+      "url": "https://releases.magiccamai.com",
+      "channel": "latest"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "publisherName": "MagicCamAI",
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MagicCamAI",
+      "artifactName": "MagicCamAI-Setup-${version}.${ext}",
+      "license": "LICENSE.txt"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.video",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": null,
+      "extendInfo": {
+        "NSCameraUsageDescription": "MagicCamAI requires camera access to apply AI effects and replace backgrounds.",
+        "NSMicrophoneUsageDescription": "MagicCamAI requires microphone access for audio recording."
+      },
+      "artifactName": "MagicCamAI-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "MagicCamAI ${version}",
+      "iconSize": 80,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Video",
+      "synopsis": "Professional local AI creative companion app",
+      "description": "MagicCamAI — Real-time AI face swap and background replacement powered entirely by local AI models."
+    }
+  }
+}

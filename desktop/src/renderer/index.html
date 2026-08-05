@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MagicCamAI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Custom Titlebar -->
+  <div class="titlebar">
+    <div class="titlebar-logo">
+      <span class="logo-dot"></span>
+      <span>MagicCamAI</span>
+    </div>
+    <div class="titlebar-drag"></div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" id="btn-minimize">—</button>
+      <button class="titlebar-btn close" id="btn-close">×</button>
+    </div>
+  </div>
+
+  <div id="app-container">
+
+    <!-- View: Activation -->
+    <div id="view-activation" class="view active">
+      <div class="activation-card glass-panel">
+        <div class="activation-header">
+          <div class="large-logo"></div>
+          <h2>Activate MagicCamAI</h2>
+          <p>Enter your credentials to activate this copy.</p>
+        </div>
+        <div id="activation-error" class="alert alert-danger hidden"></div>
+        <form id="form-activate">
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" class="form-input" required placeholder="you@company.com">
+          </div>
+          <div class="form-group" style="margin-bottom:24px;">
+            <label for="license-key">License Key</label>
+            <input type="text" id="license-key" class="form-input" required placeholder="MC-XXXX-XXXX-XXXX-XXXX" style="font-family:monospace;letter-spacing:0.05em;">
+          </div>
+          <div class="activation-actions">
+            <button type="button" id="btn-exit" class="btn btn-secondary">Exit</button>
+            <button type="submit" id="btn-activate-submit" class="btn btn-primary">Activate Software</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- View: Main Workspace -->
+    <div id="view-workspace" class="view">
+      <div class="workspace-layout">
+
+        <!-- Left Sidebar Nav -->
+        <nav class="sidebar">
+          <div class="sidebar-top">
+            <button class="sidebar-btn active" data-page="studio" id="nav-studio">
+              <span class="sidebar-icon">🎬</span><span class="sidebar-label">Studio Live</span>
+            </button>
+            <button class="sidebar-btn" data-page="health" id="nav-health">
+              <span class="sidebar-icon">💊</span><span class="sidebar-label">Health Monitor</span>
+            </button>
+            <button class="sidebar-btn" data-page="settings" id="nav-settings">
+              <span class="sidebar-icon">⚙️</span><span class="sidebar-label">Settings</span>
+            </button>
+          </div>
+          <div class="sidebar-bottom">
+            <button class="sidebar-btn logout" id="btn-logout">
+              <span class="sidebar-icon">🚪</span><span class="sidebar-label">Logout</span>
+            </button>
+          </div>
+        </nav>
+
+        <!-- Page: Studio Live -->
+        <div id="page-studio" class="page active">
+          <!-- Left Panel -->
+          <div class="studio-left">
+            <!-- Camera Controls -->
+            <div class="panel-section">
+              <div class="section-header">Camera</div>
+              <div class="camera-controls">
+                <select id="camera-select" class="form-input compact">
+                  <option value="">Detecting cameras...</option>
+                </select>
+                <button id="btn-refresh-cameras" class="btn btn-icon" title="Refresh Cameras">⟳</button>
+              </div>
+              <button id="btn-start-camera" class="btn btn-primary full-width">Start Camera</button>
+              <div class="camera-status" id="camera-status">Camera idle</div>
+            </div>
+
+            <!-- Live Camera Preview (raw feed) -->
+            <div class="panel-section">
+              <div class="section-header">Live Camera Preview</div>
+              <div class="preview-container">
+                <video id="camera-preview" autoplay muted playsinline></video>
+                <div id="preview-placeholder" class="preview-placeholder">No camera</div>
+              </div>
+            </div>
+
+            <!-- Identity Library -->
+            <div class="panel-section flex-grow">
+              <div class="section-header">
+                Identity Library
+                <button id="btn-add-identity" class="btn btn-sm">+ Add</button>
+              </div>
+              <div id="identity-list" class="asset-grid">
+                <div class="empty-state small">No identities uploaded yet.</div>
+              </div>
+            </div>
+
+            <!-- Background Library -->
+            <div class="panel-section">
+              <div class="section-header">
+                Background Library
+                <button id="btn-add-background" class="btn btn-sm">+ Add</button>
+              </div>
+              <div class="ai-prompt-container" style="margin-bottom: 10px; display: flex; gap: 5px;">
+                <input type="text" id="ai-bg-prompt" placeholder="Generate AI background..." style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white;" />
+                <button id="btn-generate-bg" class="btn btn-sm btn-primary">Generate</button>
+              </div>
+              <div id="background-list" class="asset-grid">
+                <div class="empty-state small">No backgrounds uploaded yet.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center: Main Output -->
+          <div class="studio-center">
+            <div class="output-container">
+              <canvas id="output-canvas"></canvas>
+              <div id="output-placeholder" class="output-placeholder">
+                <div class="output-idle-icon">📷</div>
+                <h3>No Camera Running</h3>
+                <p>Select a camera and click Start Camera.</p>
+              </div>
+              <!-- HUD Overlay -->
+              <div id="output-hud" class="output-hud hidden">
+                <span id="hud-fps">0 FPS</span>
+                <span id="hud-resolution">—</span>
+                <span id="hud-identity">No identity</span>
+                <span id="hud-live" class="hud-live hidden">● LIVE</span>
+              </div>
+            </div>
+            <!-- Action Bar -->
+            <div class="action-bar">
+              <div class="action-bar-left">
+                <div class="virtual-cam-status">
+                  <span class="status-dot" id="vcam-dot"></span>
+                  <span id="vcam-status-text">Virtual Camera: Stopped</span>
+                </div>
+              </div>
+              <div class="action-bar-center">
+                <button id="btn-go-live" class="btn btn-live" disabled>Go Live</button>
+              </div>
+              <div class="action-bar-right">
+                <button id="btn-vcam-toggle" class="btn btn-secondary btn-sm" disabled>Enable V-Cam</button>
+                <button id="btn-vcam-restart" class="btn btn-secondary btn-sm" disabled>Restart</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel: Settings -->
+          <div class="studio-right">
+            <div class="search-bar">
+              <input type="text" id="search-assets" class="form-input compact" placeholder="Search identities, backgrounds and AI assets...">
+            </div>
+
+            <!-- Collapsible groups -->
+            <div class="settings-group open" data-group="identity">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Identity</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Active</label><span id="active-identity-name">None</span></div>
+                <div class="control-row"><label>Blending</label><input type="range" min="0" max="100" value="85" class="slider" id="slider-blend"></div>
+                <div class="control-row"><label>Edge Smooth</label><input type="range" min="0" max="100" value="70" class="slider" id="slider-edge"></div>
+              </div>
+            </div>
+
+            <div class="settings-group" data-group="background">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Background</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Active</label><span id="active-bg-name">None</span></div>
+                <div class="control-row"><label>Blur</label><input type="range" min="0" max="100" value="0" class="slider" id="slider-bg-blur"></div>
+                <div class="control-row"><label>Opacity</label><input type="range" min="0" max="100" value="100" class="slider" id="slider-bg-opacity"></div>
+              </div>
+            </div>
+
+            <div class="settings-group" data-group="tracking">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Tracking</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Face</label><label class="toggle"><input type="checkbox" id="chk-face-track" checked><span class="toggle-slider"></span></label></div>
+                <div class="control-row"><label>Body</label><label class="toggle"><input type="checkbox" id="chk-body-track" checked><span class="toggle-slider"></span></label></div>
+                <div class="control-row"><label>Hands</label><label class="toggle"><input type="checkbox" id="chk-hand-track"><span class="toggle-slider"></span></label></div>
+              </div>
+            </div>
+
+            <div class="settings-group" data-group="lipsync">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Lip Sync</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Enable</label><label class="toggle"><input type="checkbox" id="chk-lipsync"><span class="toggle-slider"></span></label></div>
+                <div class="control-row"><label>Mouth Tracking</label><input type="range" min="0" max="100" value="80" class="slider" id="slider-mouth"></div>
+                <div class="control-row"><label>Jaw Tracking</label><input type="range" min="0" max="100" value="60" class="slider" id="slider-jaw"></div>
+                <div class="control-row"><label>Eye Blink Sync</label><label class="toggle"><input type="checkbox" id="chk-blink-sync" checked><span class="toggle-slider"></span></label></div>
+              </div>
+            </div>
+
+            <div class="settings-group" data-group="lighting">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Lighting</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Brightness</label><input type="range" min="-50" max="50" value="0" class="slider" id="slider-brightness"></div>
+                <div class="control-row"><label>Contrast</label><input type="range" min="-50" max="50" value="0" class="slider" id="slider-contrast"></div>
+                <div class="control-row"><label>Saturation</label><input type="range" min="-50" max="50" value="0" class="slider" id="slider-saturation"></div>
+              </div>
+            </div>
+
+            <div class="settings-group" data-group="performance">
+              <div class="settings-group-header" onclick="toggleGroup(this)">
+                <span>Performance</span><span class="chevron">▾</span>
+              </div>
+              <div class="settings-group-body">
+                <div class="control-row"><label>Quality</label>
+                  <select class="form-input compact" id="select-quality">
+                    <option value="high">High</option>
+                    <option value="balanced" selected>Balanced</option>
+                    <option value="fast">Performance</option>
+                  </select>
+                </div>
+                <div class="control-row"><label>Max FPS</label>
+                  <select class="form-input compact" id="select-fps">
+                    <option value="60">60</option>
+                    <option value="30" selected>30</option>
+                    <option value="24">24</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page: Health Monitor -->
+        <div id="page-health" class="page">
+          <div class="page-content">
+            <h2 class="page-title">Health Monitor</h2>
+            <div class="health-grid">
+              <div class="health-card"><div class="health-icon" id="h-camera-icon">●</div><div class="health-label">Camera</div><div class="health-value" id="h-camera">Idle</div></div>
+              <div class="health-card"><div class="health-icon" id="h-ai-icon">●</div><div class="health-label">AI Engine</div><div class="health-value" id="h-ai">Standby</div></div>
+              <div class="health-card"><div class="health-icon" id="h-gpu-icon">●</div><div class="health-label">GPU</div><div class="health-value" id="h-gpu">—</div></div>
+              <div class="health-card"><div class="health-icon" id="h-cpu-icon">●</div><div class="health-label">CPU</div><div class="health-value" id="h-cpu">—</div></div>
+              <div class="health-card"><div class="health-icon" id="h-mem-icon">●</div><div class="health-label">Memory</div><div class="health-value" id="h-mem">—</div></div>
+              <div class="health-card"><div class="health-icon" id="h-vcam-icon">●</div><div class="health-label">Virtual Camera</div><div class="health-value" id="h-vcam">Stopped</div></div>
+              <div class="health-card"><div class="health-icon" id="h-model-icon">●</div><div class="health-label">AI Models</div><div class="health-value" id="h-model">—</div></div>
+              <div class="health-card"><div class="health-icon" id="h-license-icon">●</div><div class="health-label">License</div><div class="health-value" id="h-license">—</div></div>
+            </div>
+            <div class="health-detail glass-panel" style="margin-top:24px;">
+              <h3>Hardware Profile</h3>
+              <div id="hw-profile-detail" style="font-size:0.85rem;color:var(--text-muted);line-height:1.8;">Loading hardware info...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page: Settings -->
+        <div id="page-settings" class="page">
+          <div class="page-content">
+            <h2 class="page-title">Settings</h2>
+
+            <div class="settings-section glass-panel">
+              <h3>License Information</h3>
+              <div class="license-grid">
+                <div class="license-row"><span class="license-label">Account</span><span id="lic-email" class="license-value">—</span></div>
+                <div class="license-row"><span class="license-label">License Key</span><span id="lic-key" class="license-value" style="font-family:monospace;">—</span></div>
+                <div class="license-row"><span class="license-label">Plan</span><span id="lic-plan" class="license-value">—</span></div>
+                <div class="license-row"><span class="license-label">Activation Date</span><span id="lic-activated" class="license-value">—</span></div>
+                <div class="license-row"><span class="license-label">Expiration</span><span id="lic-expires" class="license-value">—</span></div>
+                <div class="license-row"><span class="license-label">Device</span><span id="lic-device" class="license-value">—</span></div>
+                <div class="license-row"><span class="license-label">Updates</span><span id="lic-updates" class="license-value">Eligible</span></div>
+              </div>
+              <button id="btn-check-updates" class="btn btn-secondary" style="margin-top:16px;">Check for Updates</button>
+              <button id="btn-deactivate" class="btn btn-danger" style="margin-top:8px;">Deactivate License</button>
+            </div>
+
+            <div class="settings-section glass-panel">
+              <h3>Cloud & API Configuration</h3>
+              <div class="control-row">
+                <label>OpenAI API Key (DALL-E 3)</label>
+                <input type="password" id="openai-api-key" placeholder="sk-..." style="flex:1; padding:4px; background:var(--glass-bg); border:1px solid var(--glass-border); color:white; border-radius:4px;" />
+              </div>
+              <div class="control-row" style="margin-top:10px;">
+                <label>Cloud GPU URL (RunPod)</label>
+                <input type="text" id="cloud-gpu-url" placeholder="wss://...runpod.net/ws" style="flex:1; padding:4px; background:var(--glass-bg); border:1px solid var(--glass-border); color:white; border-radius:4px;" />
+              </div>
+              <button id="btn-save-cloud" class="btn btn-primary" style="margin-top:12px;">Save Configuration</button>
+            </div>
+
+            <div class="settings-section glass-panel">
+              <h3>Application</h3>
+              <div class="control-row"><label>Version</label><span id="app-version">1.0.0</span></div>
+              <div class="control-row"><label>Theme</label><span>Dark (Default)</span></div>
+              <button id="btn-clear-cache" class="btn btn-secondary" style="margin-top:12px;">Clear Cache</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
