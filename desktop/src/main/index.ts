@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, systemPreferences } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -89,7 +89,15 @@ function createWindow() {
 }
 
 // Lifecycle events
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  if (process.platform === 'darwin') {
+    const status = systemPreferences.getMediaAccessStatus('camera');
+    if (status !== 'granted') {
+      appendLog('INFO', 'STARTUP', 'Requesting macOS camera permissions...');
+      await systemPreferences.askForMediaAccess('camera');
+    }
+  }
+
   createWindow();
 
   // Spawn AI Backend

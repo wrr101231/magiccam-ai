@@ -35,27 +35,9 @@ export default function PricingPage() {
     }
 
     setPurchasing(planName);
-    try {
-      const res = await fetch('/api/purchases/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planName, amount: price }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Success! You have purchased a "${planName}" license. Key generated: ${data.licenseKey}`);
-        router.push('/dashboard');
-        router.refresh();
-      } else {
-        alert(data.error || 'Failed to complete mock purchase');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Network error completing purchase');
-    } finally {
+      // Redirect directly to our new manual crypto checkout flow
+      router.push(`/checkout?plan=${encodeURIComponent(planName)}&amount=${price}`);
       setPurchasing(null);
-    }
   };
 
   return (

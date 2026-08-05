@@ -1,84 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth';
-import { generateLicenseKey, calculateExpirationDate } from '@/lib/license';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
+  apiVersion: '2025-01-27.acacia',
+});
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);
+    
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized. Please log in.' }, { status: 401 });
     }
 
-    const { plan, amount } = await req.json();
+    const body = await req.json();
+    const { plan, amount } = body;
 
     if (!plan || !amount) {
-      return NextResponse.json({ error: 'Plan and amount are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing plan or amount.' }, { status: 400 });
     }
 
-    const licenseKey = generateLicenseKey();
-    const purchaseDate = new Date();
-    const expirationDate = calculateExpirationDate(plan, purchaseDate);
-
-    const supabase = await createClient();
-
-    // 1. Create License
-    const { data: license, error: licError } = await supabase
-      .from('licenses')
-      .insert({
-        key: licenseKey,
-        plan,
-        status: 'Unused',
-        user_id: session.userId,
-        purchase_date: purchaseDate.toISOString(),
-        expiration_date: expirationDate ? expirationDate.toISOString() : null,
-      })
-      .select()
-      .single();
-
-    if (licError || !license) {
-      throw new Error(licError?.message || 'Failed to create license');
-    }
-
-    // 2. Create Purchase record
-    const gatewayRef = `MOCK-TX-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-    const { data: purchase, error: purError } = await supabase
-      .from('purchases')
-      .insert({
-        user_id: session.userId,
-        license_id: license.id,
-        amount: parseFloat(amount),
-        currency: 'USD',
-        status: 'PAID',
-        payment_method: 'Mock Checkout Gateway',
-        gateway_ref: gatewayRef,
-      })
-      .select()
-      .single();
-
-    if (purError) {
-      // Rollback license creation (delete)
-      await supabase.from('licenses').delete().eq('id', license.id);
-      throw new Error(purError.message);
-    }
-
-    // 3. Log Audit Trail
-    await supabase.from('audit_logs').insert({
-      user_id: session.userId,
-      action: 'purchase_license',
-      details: `Purchased plan: ${plan}, key: ${licenseKey}, txRef: ${gatewayRef}`,
+    // Map plans to Stripe Price Objects
+    // In production, you would create these Products/Prices in the Stripe Dashboard
+    // and pass price IDs. For this dynamic flow, we use price_data.
+    const checkoutSession = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: session.email,
+      client_reference_id: session.userId,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `MagicCamAI - ${plan} License`,
+              description: 'AI Camera and Video Generation software.',
+            },
+            unit_amount: amount * 100, // Stripe expects cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${SITE_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${SITE_URL}/pricing?canceled=true`,
+      metadata: {
+        userId: session.userId,
+        plan: plan,
+      },
     });
 
-    return NextResponse.json({
-      message: 'License purchased successfully',
-      licenseKey: license.key,
-      plan: license.plan,
-    });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch (error: any) {
-    console.error('Purchase creation error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Internal server error processing purchase' },
-      { status: 500 }
-    );
+    console.error('Stripe error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
