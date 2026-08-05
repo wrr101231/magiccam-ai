@@ -54,6 +54,7 @@ export default function PricingPage() {
     } finally {
       setPurchasing(null);
     }
+  };
 
   return (
     <div className={styles.container} style={{ paddingTop: '80px', paddingBottom: '80px' }}>
