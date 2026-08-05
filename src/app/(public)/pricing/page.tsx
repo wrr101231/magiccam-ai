@@ -34,11 +34,26 @@ export default function PricingPage() {
       return;
     }
 
-    setPurchasing(planName);
-      // Redirect directly to our new manual crypto checkout flow
-      router.push(`/checkout?plan=${encodeURIComponent(planName)}&amount=${price}`);
+    try {
+      const res = await fetch('/api/purchases/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planName, amount: price }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        // Redirect to Coinbase Commerce Hosted Checkout
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to initiate purchase');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Network error initiating purchase');
+    } finally {
       setPurchasing(null);
-  };
+    }
 
   return (
     <div className={styles.container} style={{ paddingTop: '80px', paddingBottom: '80px' }}>

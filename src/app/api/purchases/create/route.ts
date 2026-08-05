@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-  apiVersion: '2025-01-27.acacia',
-});
-
+const COINBASE_API_URL = 'https://api.commerce.coinbase.com/charges';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 export async function POST(req: NextRequest) {
@@ -23,38 +19,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing plan or amount.' }, { status: 400 });
     }
 
-    // Map plans to Stripe Price Objects
-    // In production, you would create these Products/Prices in the Stripe Dashboard
-    // and pass price IDs. For this dynamic flow, we use price_data.
-    const checkoutSession = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      customer_email: session.email,
-      client_reference_id: session.userId,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `MagicCamAI - ${plan} License`,
-              description: 'AI Camera and Video Generation software.',
-            },
-            unit_amount: amount * 100, // Stripe expects cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${SITE_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${SITE_URL}/pricing?canceled=true`,
-      metadata: {
-        userId: session.userId,
-        plan: plan,
+    const coinbaseApiKey = process.env.COINBASE_API_KEY;
+    if (!coinbaseApiKey) {
+      console.error('Missing COINBASE_API_KEY environment variable');
+      return NextResponse.json({ error: 'Coinbase Commerce API Key is not configured.' }, { status: 500 });
+    }
+
+    // Call Coinbase Commerce API to create a Charge
+    const response = await fetch(COINBASE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CC-Api-Key': coinbaseApiKey,
+        'X-CC-Version': '2018-03-22',
       },
+      body: JSON.stringify({
+        name: `MagicCamAI - ${plan} License`,
+        description: 'AI Camera and Video Generation software.',
+        pricing_type: 'fixed_price',
+        local_price: {
+          amount: amount.toString(),
+          currency: 'USD'
+        },
+        metadata: {
+          userId: session.userId,
+          plan: plan,
+        },
+        redirect_url: `${SITE_URL}/dashboard?success=true`,
+        cancel_url: `${SITE_URL}/pricing?canceled=true`
+      })
     });
 
-    return NextResponse.json({ url: checkoutSession.url });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(`Coinbase Error: ${data.error?.message || 'Failed to create charge'}`);
+    }
+
+    // Return the hosted URL so the user can be redirected to Coinbase Checkout
+    const checkoutUrl = data.data.hosted_url;
+    
+    return NextResponse.json({ url: checkoutUrl });
   } catch (error: any) {
-    console.error('Stripe error:', error);
+    console.error('Coinbase API error:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
