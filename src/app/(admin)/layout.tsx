@@ -162,6 +162,32 @@ export default function AdminLayout({
             >
               📜 Audit Logs
             </Link>
+
+            <Link 
+              href="/wallets" 
+              className="btn btn-secondary" 
+              style={{ 
+                justifyContent: 'flex-start',
+                background: pathname === '/wallets' ? 'rgba(236, 72, 153, 0.1)' : 'transparent',
+                borderColor: pathname === '/wallets' ? 'rgba(236, 72, 153, 0.3)' : 'transparent',
+                color: pathname === '/wallets' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+            >
+              👛 Crypto Wallets
+            </Link>
+
+            <Link 
+              href="/orders" 
+              className="btn btn-secondary" 
+              style={{ 
+                justifyContent: 'flex-start',
+                background: pathname === '/orders' ? 'rgba(236, 72, 153, 0.1)' : 'transparent',
+                borderColor: pathname === '/orders' ? 'rgba(236, 72, 153, 0.3)' : 'transparent',
+                color: pathname === '/orders' ? '#ffffff' : 'var(--text-secondary)'
+              }}
+            >
+              🛒 Crypto Orders
+            </Link>
           </nav>
         </div>
 
