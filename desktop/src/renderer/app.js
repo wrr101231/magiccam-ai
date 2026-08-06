@@ -220,15 +220,27 @@ async function startCamera() {
   statusEl.style.color = 'var(--warning)';
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        deviceId: { exact: state.selectedCameraId },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 },
-      },
-      audio: false,
-    });
+    // Attempt high quality first
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: { exact: state.selectedCameraId },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+        audio: false,
+      });
+    } catch (fallbackErr) {
+      console.warn('High quality camera failed, falling back to defaults:', fallbackErr);
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: { exact: state.selectedCameraId }
+        },
+        audio: false,
+      });
+    }
 
     state.cameraStream = stream;
     state.cameraRunning = true;
@@ -403,11 +415,14 @@ function startOutputRender(stream) {
         lastBackgroundId = currentBgId;
         if (state.activeBackground) {
           if (aiSocket && aiSocket.readyState === WebSocket.OPEN) {
-            const bgPath = state.activeBackground.path || (state.activeBackground.url ? state.activeBackground.url.replace('file://', '') : null);
-            if (window.api && window.api.library && window.api.library.log) {
-              window.api.library.log('INFO', 'AI_ENGINE', 'Sending bg_update: ' + bgPath);
+            const bgPath = state.activeBackground.path || (state.activeBackground.url ? state.activeBackground.url.replace('file://', '').replace('magic://', '') : null);
+            if (bgPath && window.api && window.api.library && window.api.library.readFileBase64) {
+              window.api.library.readFileBase64(bgPath).then(base64 => {
+                if (base64) aiSocket.send(JSON.stringify({ type: 'bg_update', bg: base64 }));
+              });
+            } else {
+              aiSocket.send(JSON.stringify({ type: 'bg_update', bg: bgPath })); // fallback
             }
-            aiSocket.send(JSON.stringify({ type: 'bg_update', bg: bgPath }));
           }
         } else {
           // Clear background
@@ -423,11 +438,14 @@ function startOutputRender(stream) {
         lastIdentityId = currentId;
         if (state.activeIdentity) {
           if (aiSocket && aiSocket.readyState === WebSocket.OPEN) {
-            const idPath = state.activeIdentity.path || (state.activeIdentity.url ? state.activeIdentity.url.replace('file://', '') : null);
-            if (window.api && window.api.library && window.api.library.log) {
-              window.api.library.log('INFO', 'AI_ENGINE', 'Sending id_update: ' + idPath);
+            const idPath = state.activeIdentity.path || (state.activeIdentity.url ? state.activeIdentity.url.replace('file://', '').replace('magic://', '') : null);
+            if (idPath && window.api && window.api.library && window.api.library.readFileBase64) {
+              window.api.library.readFileBase64(idPath).then(base64 => {
+                if (base64) aiSocket.send(JSON.stringify({ type: 'id_update', id: base64 }));
+              });
+            } else {
+              aiSocket.send(JSON.stringify({ type: 'id_update', id: idPath })); // fallback
             }
-            aiSocket.send(JSON.stringify({ type: 'id_update', id: idPath }));
           }
         } else {
           // Clear identity
@@ -653,16 +671,14 @@ $('btn-generate-bg')?.addEventListener('click', async () => {
   const promptInput = $('ai-bg-prompt');
   const btn = $('btn-generate-bg');
   const prompt = promptInput?.value.trim();
-  const apiKey = localStorage.getItem('openai_api_key');
   
   if (!prompt) return alert('Please enter a prompt.');
-  if (!apiKey) return alert('Please configure your OpenAI API Key in Settings first.');
   
   btn.disabled = true;
   btn.textContent = 'Generating...';
   
   try {
-    const result = await window.api.library.generateBackground(prompt, apiKey);
+    const result = await window.api.library.generateBackground(prompt);
     if (result.success) {
       const bg = {
         id: Date.now().toString(),

@@ -50,7 +50,7 @@ contextBridge.exposeInMainWorld('api', {
     importBackground: (filePath: string) => ipcRenderer.invoke('library:importBackground', filePath),
     getBackgrounds: () => ipcRenderer.invoke('library:getBackgrounds'),
     deleteBackground: (name: string) => ipcRenderer.invoke('library:deleteBackground', name),
-    generateBackground: (prompt: string, apiKey: string) => ipcRenderer.invoke('library:generateBackground', prompt, apiKey),
+    generateBackground: (prompt: string) => ipcRenderer.invoke('library:generateBackground', prompt),
     saveVideo: (arrayBuffer: ArrayBuffer) => ipcRenderer.invoke('recording:saveVideo', arrayBuffer),
     saveProjects: (projectsJson: string) => ipcRenderer.invoke('projects:save', projectsJson),
     loadProjects: () => ipcRenderer.invoke('projects:load'),
@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('api', {
     getIdentities: () => ipcRenderer.invoke('library:getIdentities'),
     deleteIdentity: (name: string) => ipcRenderer.invoke('library:deleteIdentity', name),
     importAIModel: (filePath: string) => ipcRenderer.invoke('models:importAIModel', filePath),
+    readFileBase64: (filePath: string) => ipcRenderer.invoke('library:readFileBase64', filePath),
     
     // Phase 6 optimizations:
     log: (level: string, category: string, message: string) => ipcRenderer.send('logger:log', level, category, message),

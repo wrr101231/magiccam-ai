@@ -9,6 +9,10 @@ import { getModelStatusList, downloadModel, repairModel, getStorageUsage, import
 import { checkForUpdates, downloadUpdate, cancelDownload, installUpdate, getCurrentVersion, cleanupOldUpdates, scheduleAutoUpdateCheck } from './updater';
 import config from './config.json';
 
+// Force WebRTC / UserMedia media stream access across OS platforms without blocking UI prompts
+app.commandLine.appendSwitch('enable-usermedia-screen-capturing');
+app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+
 console.log(`Starting MagicCamAI Desktop. Bundle models mode: ${config.bundleModels}`);
 
 let mainWindow: BrowserWindow | null = null;
@@ -307,6 +311,16 @@ ipcMain.handle('library:importFace', async (_, filePath: string) => {
 });
 
 // Retrieve uploaded faces
+ipcMain.handle('library:readFileBase64', async (_, filePath: string) => {
+  try {
+    const data = fs.readFileSync(filePath);
+    return `data:image/jpeg;base64,${data.toString('base64')}`;
+  } catch (error) {
+    console.error('Failed to read file as base64', error);
+    return null;
+  }
+});
+
 ipcMain.handle('library:getFaces', async () => {
   try {
     const files = fs.readdirSync(FACES_DIR);
@@ -457,33 +471,37 @@ ipcMain.handle('library:deleteIdentity', async (_, name: string) => {
   }
 });
 
-// Generate AI Background using OpenAI
-ipcMain.handle('library:generateBackground', async (_, prompt: string, apiKey: string) => {
-  if (!apiKey) return { success: false, error: 'OpenAI API Key is missing in Settings.' };
+// Generate AI Background using Portal API
+ipcMain.handle('library:generateBackground', async (_, prompt: string) => {
   appendLog('INFO', 'LIBRARY', `Generating AI background for prompt: "${prompt}"`);
   
   try {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const token = loadActivationToken();
+    if (!token) {
+      return { success: false, error: 'Software not activated. Please activate first.' };
+    }
+
+    const PORTAL_URL = process.env.MAGICCAM_PORTAL_URL || config.portalUrl || 'http://localhost:3001';
+    
+    const response = await fetch(`${PORTAL_URL}/api/desktop/generate-bg`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "dall-e-3",
         prompt: prompt,
-        n: 1,
-        size: "1024x1024"
+        activationToken: token
       })
     });
     
     if (!response.ok) {
       const errData = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} ${errData}`);
+      throw new Error(`Portal API error: ${response.status} ${errData}`);
     }
     
     const data = await response.json();
-    const imageUrl = data.data[0].url;
+    if (data.error) throw new Error(data.error);
+    const imageUrl = data.url;
     
     // Download image and save to backgrounds directory
     const imgRes = await fetch(imageUrl);

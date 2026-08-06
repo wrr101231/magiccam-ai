@@ -102,9 +102,9 @@ export async function validateLicenseOnline(): Promise<{ valid: boolean; error?:
     }
   } catch (e) {
     console.error('Online license validation error:', e);
-    // If server is offline, return true as offline grace period fallback,
-    // or return false depending on strict online requirements. Here we allow offline grace period.
-    return { valid: true }; // offline grace period fallback
+    // If server is offline, enforce offline grace period fallback.
+    // This ensures the software continues to work on the client's computer without error.
+    return { valid: true, error: 'Offline - Grace period active' };
   }
 }
 
