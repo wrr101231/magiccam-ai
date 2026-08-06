@@ -16,8 +16,12 @@ import mediapipe as mp
 app = FastAPI()
 
 # 1. Initialize Segmentation (For Background Replacement)
-mp_selfie_segmentation = mp.solutions.selfie_segmentation
-segmenter = mp_selfie_segmentation.SelfieSegmentation(model_selection=1)
+try:
+    mp_selfie_segmentation = mp.solutions.selfie_segmentation
+    segmenter = mp_selfie_segmentation.SelfieSegmentation(model_selection=1)
+except AttributeError:
+    print("WARNING: mediapipe.solutions is not available in this Python version. Background replacement is disabled.")
+    segmenter = None
 
 # 2. Initialize LivePortrait (GPU Required!)
 try:
@@ -75,17 +79,18 @@ async def websocket_endpoint(websocket: WebSocket):
                         processed_img = img
                     
                     # ---- 2. Segmentation & Background Replacement ----
-                    img_rgb = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
-                    results = segmenter.process(img_rgb)
-                    
-                    if results.segmentation_mask is not None:
-                        mask = cv2.GaussianBlur(results.segmentation_mask, (5, 5), 0)
-                        mask_3d = np.stack((mask,) * 3, axis=-1)
+                    if segmenter is not None:
+                        img_rgb = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+                        results = segmenter.process(img_rgb)
                         
-                        if current_bg_img is not None:
-                            bg = cv2.resize(current_bg_img, (processed_img.shape[1], processed_img.shape[0]))
-                            bg = cv2.GaussianBlur(bg, (15, 15), 0)
-                            processed_img = (processed_img * mask_3d + bg * (1 - mask_3d)).astype(np.uint8)
+                        if results.segmentation_mask is not None:
+                            mask = cv2.GaussianBlur(results.segmentation_mask, (5, 5), 0)
+                            mask_3d = np.stack((mask,) * 3, axis=-1)
+                            
+                            if current_bg_img is not None:
+                                bg = cv2.resize(current_bg_img, (processed_img.shape[1], processed_img.shape[0]))
+                                bg = cv2.GaussianBlur(bg, (15, 15), 0)
+                                processed_img = (processed_img * mask_3d + bg * (1 - mask_3d)).astype(np.uint8)
                     
                     # Send back encoded frame
                     _, buffer = cv2.imencode('.jpg', processed_img, [cv2.IMWRITE_JPEG_QUALITY, 80])
